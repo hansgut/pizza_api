@@ -32,6 +32,7 @@ jobs:
     needs: [test]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Build and push to dockerhub
         uses: docker/build-push-action@v6.9.0
         with:
