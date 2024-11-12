@@ -8,4 +8,5 @@ urlpatterns = [
     path("api/v1/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/v1/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/v1/menu/", include("menu.urls")),
+    path("api/v1/coupons/", include("coupons.urls")),
 ]
