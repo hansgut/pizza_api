@@ -1,4 +1,4 @@
-name: Django CI
+name: Test and push to dockerhub
 
 on:
   push:
@@ -7,8 +7,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
     strategy:
       max-parallel: 4
@@ -28,3 +27,16 @@ jobs:
     - name: Run Tests
       run: |
         python manage.py test
+
+  push-to-dockerhub:
+    needs: [test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build and push to dockerhub
+        uses: docker/build-push-action@v6.9.0
+        with:
+          context: .
+          file: ./Dockerfile
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/pizza-api:latest
+          push: true
+  
