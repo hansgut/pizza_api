@@ -112,7 +112,6 @@ class AccountsAPITestCase(TestCase):
 
         # Update the profile
         response = self.client.put(self.profile_url, update_data, format='json')
-        print(response.data)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
         # Verify the changes
@@ -233,7 +232,6 @@ class AccountsAPITestCase(TestCase):
         update_data = self.user_data.copy()
         update_data['password'] = 'newpassword123'
 
-
         # Update the password
         response = self.client.put(self.profile_url, update_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -255,4 +253,171 @@ class AccountsAPITestCase(TestCase):
         }, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
-    # Add more tests as needed for your application
+    def test_address_creation(self):
+        """
+        Test that an authenticated user can create an address.
+        """
+        # Register and log in the user
+        self.client.post(self.registration_url, self.user_data, format='json')
+        response = self.client.post(self.login_url, {
+            "username": "testuser",
+            "password": "testpassword123"
+        }, format='json')
+        token = response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+
+        # Prepare address creation data
+        address_data = {
+            "street": "123 Main St",
+            "city": "Springfield",
+            "zip_code": "12345",
+            "is_default": True,
+            "address_type": "Home"
+        }
+
+        # Create the address
+        response = self.client.post(reverse('user-address'), address_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(CustomerProfile.objects.filter(user__username='testuser').exists())
+        self.assertTrue(CustomerProfile.objects.filter(user__username='testuser').exists())
+
+    def test_get_addresses(self):
+        """
+        Test that an authenticated user can retrieve their addresses.
+        """
+        # Register and log in the user
+        self.client.post(self.registration_url, self.user_data, format='json')
+        response = self.client.post(self.login_url, {
+            "username": "testuser",
+            "password": "testpassword123"
+        }, format='json')
+        token = response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+
+        # Retrieve the addresses
+        response = self.client.get(reverse('user-address'), format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+
+    def test_update_address(self):
+        """
+        Test that an authenticated user can update their address.
+        """
+        # Register and log in the user
+        self.client.post(self.registration_url, self.user_data, format='json')
+        response = self.client.post(self.login_url, {
+            "username": "testuser",
+            "password": "testpassword123"
+        }, format='json')
+        token = response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+
+        # Create an address
+        address_data = {
+            "street": "123 Main St",
+            "city": "Springfield",
+            "zip_code": "12345",
+            "is_default": True,
+            "address_type": "Home"
+        }
+        response = self.client.post(reverse('user-address'), address_data, format='json')
+        address_id = response.data['id']
+
+        # Prepare address update data
+        update_data = {
+            "street": "456 Elm St",
+            "city": "Rivertown",
+            "zip_code": "54321",
+            "is_default": False,
+            "address_type": "Work"
+        }
+
+        # Update the address
+        response = self.client.put(reverse('user-address-detail', args=[address_id]), update_data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify the changes
+        self.assertEqual(response.data['street'], '456 Elm St')
+        self.assertEqual(response.data['city'], 'Rivertown')
+        self.assertEqual(response.data['zip_code'], '54321')
+        self.assertFalse(response.data['is_default'])
+        self.assertEqual(response.data['address_type'], 'Work')
+
+    def test_delete_address(self):
+        """
+        Test that an authenticated user can delete their address.
+        """
+        # Register and log in the user
+        self.client.post(self.registration_url, self.user_data, format='json')
+        response = self.client.post(self.login_url, {
+            "username": "testuser",
+            "password": "testpassword123"
+        }, format='json')
+        token = response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+
+        # Create an address
+        address_data = {
+            "street": "123 Main St",
+            "city": "Springfield",
+            "zip_code": "12345",
+            "is_default": True,
+            "address_type": "Home"
+        }
+        response = self.client.post(reverse('user-address'), address_data, format='json')
+        address_id = response.data['id']
+
+        # Delete the address
+        response = self.client.delete(reverse('user-address-detail', args=[address_id]), format='json')
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Ensure the address is deleted
+        response = self.client.get(reverse('user-address'), format='json')
+        self.assertEqual(len(response.data), 0)
+
+
+    def test_get_foreign_addresses(self):
+        """
+        Test that an authenticated user cannot retrieve another user's addresses.
+        """
+        # Register and log in the first user
+        self.client.post(self.registration_url, self.user_data, format='json')
+        response = self.client.post(self.login_url, {
+            "username": "testuser",
+            "password": "testpassword123"
+        }, format='json')
+        token = response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+
+        # Create an address for the first user
+        address_data = {
+            "street": "123 Main St",
+            "city": "Springfield",
+            "zip_code": "12345",
+            "is_default": True,
+            "address_type": "Home"
+        }
+        self.client.post(reverse('user-address'), address_data, format='json')
+
+        # Register and log in the second user
+        self.client.post(self.registration_url, {
+            "username": "anotheruser",
+            "email": "t@t.com",
+            "password": "testpassword123",
+            "profile": {
+                "phone_number": "1234567890",
+                "date_of_birth": "1990-01-01"
+            }
+        }, format='json')
+        response = self.client.post(self.login_url, {
+            "username": "anotheruser",
+            "password": "testpassword123"
+        }, format='json')
+        token = response.data['access']
+        self.client.credentials(HTTP_AUTHORIZATION='Bearer ' + token)
+
+        # Attempt to retrieve the first user's addresses
+        response = self.client.get(reverse('user-address'), format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 0)
+        self.assertNotIn('123 Main St', response.data)

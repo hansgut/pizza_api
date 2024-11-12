@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import CustomerProfile
+from .models import CustomerProfile, Address
 
 
 @admin.register(CustomerProfile)
@@ -16,6 +16,21 @@ class CustomerProfileAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(Address)
+class AddressAdmin(admin.ModelAdmin):
+    list_display = ['customer', 'street', 'city', 'zip_code', 'is_default', 'address_type']
+    search_fields = ['customer__username', 'street', 'city', 'zip_code']
+    list_filter = ['is_default', 'address_type']
+    fieldsets = (
+        (None, {
+            'fields': ('customer', 'street', 'city', 'zip_code', 'is_default', 'address_type')
+        }),
+    )
 
     def has_delete_permission(self, request, obj=None):
         return False

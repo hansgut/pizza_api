@@ -1,6 +1,7 @@
 from rest_framework import generics, permissions
 from django.contrib.auth.models import User
-from .serializers import UserSerializer
+from .models import Address
+from .serializers import UserSerializer, AddressSerializer
 
 
 class UserRegistrationView(generics.CreateAPIView):
@@ -16,3 +17,19 @@ class UserDetailView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
+
+class UserAddressView(generics.ListCreateAPIView):
+    serializer_class = AddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Address.objects.filter(customer=self.request.user)
+
+
+class UserAddressDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = AddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Address.objects.filter(customer=self.request.user)

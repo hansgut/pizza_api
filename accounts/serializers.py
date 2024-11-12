@@ -1,12 +1,34 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import CustomerProfile
+from .models import CustomerProfile, Address
 
 
 class CustomerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomerProfile
         fields = ['phone_number', 'date_of_birth']
+
+
+class AddressSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Address
+        fields = ['id', 'street', 'city', 'zip_code', 'is_default', 'address_type']
+
+    def create(self, validated_data):
+        user = self.context.get("request").user
+        address = Address.objects.create(customer=user, **validated_data)
+        return address
+
+    def update(self, instance, validated_data):
+        instance.street = validated_data.get('street', instance.street)
+        instance.city = validated_data.get('city', instance.city)
+        instance.zip_code = validated_data.get('zip_code', instance.zip_code)
+        instance.is_default = validated_data.get('is_default', instance.is_default)
+        instance.address_type = validated_data.get('address_type', instance.address_type)
+        instance.save()
+        if instance.is_default:
+            Address.objects.filter(customer=instance.customer).exclude(pk=instance.pk).update(is_default=False)
+        return instance
 
 
 class UserSerializer(serializers.ModelSerializer):
