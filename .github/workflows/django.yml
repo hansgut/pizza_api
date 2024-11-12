@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5.3.0
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install Dependencies
@@ -43,6 +43,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64/v8
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/pizza-api:latest
           push: true
   
