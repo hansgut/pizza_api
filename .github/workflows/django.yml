@@ -44,6 +44,8 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: Build and push to dockerhub
         uses: docker/build-push-action@v6.9.0
+        env:
+          DOCKER_BUILD_SUMMARY: false
         with:
           context: .
           file: ./Dockerfile
