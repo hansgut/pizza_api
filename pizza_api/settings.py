@@ -41,6 +41,8 @@ INSTALLED_APPS = [
     "accounts",
     "menu",
     "coupons",
+    "orders",
+    "delivery"
 ]
 
 REST_FRAMEWORK = {
