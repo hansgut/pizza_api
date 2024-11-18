@@ -1,55 +1,51 @@
-name: Test and push to dockerhub
+name: Build and Push to Docker Hub
 
 on:
   push:
     branches: [ "main" ]
   pull_request:
+    types: [closed]
     branches: [ "main" ]
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-      matrix:
-        python-version: [3.11, 3.12]
-
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5.3.0
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    - name: Run Tests
-      run: |
-        python manage.py test
-
   push-to-dockerhub:
-    needs: [test]
     runs-on: ubuntu-latest
+    if: |
+      github.ref == 'refs/heads/main' &&
+      (
+        github.event_name == 'push' ||
+        (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+      )
     steps:
+      - uses: actions/checkout@v4
+
+      # Optional: Run tests before deploying
+      - name: Set up Python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: 3.12
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run Tests
+        run: |
+          python manage.py test
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3.2.0
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3.7.1
-      - uses: actions/checkout@v4
       - name: Login to Docker Hub
         uses: docker/login-action@v3.3.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      - name: Build and push to dockerhub
+      - name: Build and Push to Docker Hub
         uses: docker/build-push-action@v6.9.0
-        env:
-          DOCKER_BUILD_SUMMARY: false
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64/v8
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/pizza-api:latest
           push: true
-  

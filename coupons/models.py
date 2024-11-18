@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db import models
 from django.utils import timezone
 
@@ -37,7 +39,10 @@ class Coupon(models.Model):
         Apply the discount to the given order total.
         """
         if self.discount_type == 'percentage':
-            discount = (self.discount_value / 100) * order_total
+            if isinstance(order_total, Decimal):
+                discount = Decimal(str(self.discount_value / 100)) * order_total
+            else:
+                discount = self.discount_value / 100 * order_total
         else:
             discount = self.discount_value
 
